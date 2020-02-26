@@ -156,11 +156,9 @@ int __wasi_args_sizes_get(
     return __WASI_ESUCCESS;
 }
 
-extern int sys_close(unsigned int fd);
 int __wasi_fd_close(struct vmctx *ctx, __wasi_fd_t fd) {
     int ret;
-    //ret = __close_fd(current->files, fd);
-    ret = sys_close(fd);
+    ret = __close_fd(current->files, fd);
     if(ret < 0) return __WASI_EBADF;
     return __WASI_ESUCCESS;
 }
@@ -277,6 +275,25 @@ int __wasi_fd_read(
     return 0;
 }
 
+int __wasi_fd_seek(
+    struct vmctx *ctx,
+    __wasi_fd_t fd,
+    __wasi_filedelta_t offset,
+    __wasi_whence_t whence,
+    wasm_pointer_t newoffset
+) {
+    __wasi_filesize_t *newoffset_p;
+
+    newoffset_p = (void *) vmctx_get_memory_slice(ctx, newoffset, sizeof(__wasi_filesize_t));
+    if(!newoffset_p) {
+        return __WASI_EFAULT;
+    }
+
+    // FIXME: not implemented
+    *newoffset_p = 0;
+    return __WASI_ESUCCESS;
+}
+
 int __wasi_random_get(
     struct vmctx *ctx,
     wasm_pointer_t buf,
@@ -360,6 +377,10 @@ int do_resolve(struct import_resolver_instance *self, const char *name, struct i
     } else if(strcmp(name, "wasi_unstable##path_open") == 0) {
         out->fn = __wasi_path_open;
         out->param_count = 9;
+        return 0;
+    } else if(strcmp(name, "wasi_unstable##fd_seek") == 0) {
+        out->fn = __wasi_fd_seek;
+        out->param_count = 4;
         return 0;
     } else {
         return -EINVAL;
